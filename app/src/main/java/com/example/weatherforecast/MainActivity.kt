@@ -13,17 +13,32 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.lifecycle.lifecycleScope // Import mới
+import kotlinx.coroutines.Dispatchers // Import mới
+import kotlinx.coroutines.launch // Import mới
+import kotlinx.coroutines.withContext // Import mới
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import android.widget.ImageView // Nếu bạn dùng icon để mở lịch sử
 
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var database: WeatherDatabase
     private val binding: ActivityMainBinding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+
+        database = WeatherDatabase.getDatabase(this)
         fetchWeatherData("Indore")
         searchCity()
+        // Bắt sự kiện khi click vào nút Lịch sử
+        binding.btnHistory.setOnClickListener {
+            showHistoryDialog()
+        }
         }
 
     private fun searchCity(){
@@ -88,12 +103,28 @@ class MainActivity : AppCompatActivity() {
                     date.text = exactDate()
                     wind.text = getString(R.string.title2value,windSpeed)
                     city.text = cityName
+                    val historyItem = SavedWeather(
+                        cityName = cityName,
+                        temperature = temperature,
+                        date = exactDate().toString(),
+                        condition = conditionValue
+                    )
+                    saveToDatabase(historyItem) // Gọi hàm lưu
                     changeBackgroundOnCondition(conditionValue)
                 }
             }
             override fun onFailure(call: Call<weatherforecast>, t: Throwable) {
             }
         })
+    }
+
+    private fun saveToDatabase(item: SavedWeather) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            database.weatherDao().insertWeather(item)
+            // Nếu muốn lấy danh sách lịch sử ra log để kiểm tra:
+            // val list = database.weatherDao().getAllWeather()
+            // Log.d("DatabaseCheck", "Size: ${list.size}")
+        }
     }
 
     private fun changeBackgroundOnCondition(conditions:String) {
@@ -157,5 +188,28 @@ class MainActivity : AppCompatActivity() {
         val sdf  = SimpleDateFormat("HH:mm", Locale.getDefault())
         return sdf.format((Date(timestamp*1000)))
     }
+    // Hàm này để hiển thị lịch sử
+    private fun showHistoryDialog() {
+        // Tạo dialog
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(R.layout.dialog_history)
 
+        val rvHistory = dialog.findViewById<RecyclerView>(R.id.rvHistory)
+        rvHistory?.layoutManager = LinearLayoutManager(this)
+
+        // Lấy dữ liệu từ Database (chạy trên background thread)
+        lifecycleScope.launch(Dispatchers.IO) {
+            // Gọi hàm getAllWeather từ DAO của bạn
+            val historyList = database.weatherDao().getAllWeather()
+
+            // Cập nhật UI trên Main Thread
+            withContext(Dispatchers.Main) {
+                if (historyList.isNotEmpty()) {
+                    val adapter = WeatherHistoryAdapter(historyList)
+                    rvHistory?.adapter = adapter
+                }
+                dialog.show()
+            }
+        }
+    }
 }

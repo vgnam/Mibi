@@ -7,19 +7,33 @@
     android:background="@drawable/new_gradient_bg"
     android:padding="16dp"
     tools:context=".MainActivity">
+    <ImageView
+        android:id="@+id/btnHistory"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@android:drawable/ic_menu_recent_history"
+        android:background="@drawable/searchviewshape"
+        android:padding="8dp"
+        app:tint="@color/black"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        />
 
     <SearchView
         android:id="@+id/searchView"
         android:layout_width="0dp"
         android:layout_height="50dp"
         android:layout_marginTop="24dp"
+        android:layout_marginEnd="8dp"
         android:background="@drawable/searchviewshape"
         android:elevation="8dp"
         android:iconifiedByDefault="false"
         android:queryHint="Search city..."
         android:searchIcon="@drawable/search"
         android:theme="@style/ThemeOverlay.AppCompat.Light"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btnHistory"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
